@@ -1,8 +1,12 @@
 package org.wso2.carbon.custom.user.operation.event.listener;
 
+import org.apache.commons.lang.StringUtils;
+import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.custom.user.operation.event.listener.internal.ServiceComponent;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.application.common.model.ApplicationPermission;
+import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.user.api.UserRealm;
 import org.wso2.carbon.user.api.UserRealmService;
 import org.wso2.carbon.user.core.UserStoreException;
@@ -11,6 +15,7 @@ import org.wso2.carbon.user.core.common.AbstractUserOperationEventListener;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.user.core.util.UserCoreUtil;
+import org.wso2.carbon.identity.oauth2.internal.OAuth2ServiceComponentHolder;
 import java.util.*;
 
 /**
@@ -22,6 +27,7 @@ public class CustomClaimUserOperationEventListener extends AbstractUserOperation
     private static final String DEFAULT_PERMISSION_SEPARATOR = "/";
     private static final String ABB_PERMISSION_SEPARATOR = ":";
     private static final String ENTITLEMENTS_CLAIM = "http://wso2.org/claims/entitlements";
+    private static final String SUPER_TENANT_DOMAIN = "carbon.super";
     private static Log log = LogFactory.getLog(CustomClaimUserOperationEventListener.class);
 
     @Override
@@ -49,6 +55,7 @@ public class CustomClaimUserOperationEventListener extends AbstractUserOperation
             }
             for (String permission : permissionList) {
                 if (permission.startsWith(APPLICATION_PERMISSION_NODE)) {
+                    //spPermission could be either sp name or sp permission
                     String spPermission = permission.substring(APPLICATION_PERMISSION_NODE.lastIndexOf("s") + 2);
                     if (spPermission.contains(DEFAULT_PERMISSION_SEPARATOR)) {
                         spPermission = spPermission.replace(DEFAULT_PERMISSION_SEPARATOR, ABB_PERMISSION_SEPARATOR);
@@ -57,9 +64,21 @@ public class CustomClaimUserOperationEventListener extends AbstractUserOperation
                         if (log.isDebugEnabled()) {
                             log.debug("Retrieving all the permission of the application : " + spPermission);
                         }
-                        /*
-                        to-do
-                         */
+
+                        String tenantDomain = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain();
+                        if (StringUtils.isBlank(tenantDomain)){
+                            tenantDomain = SUPER_TENANT_DOMAIN;
+                        }
+                        ServiceProvider provider = OAuth2ServiceComponentHolder.getApplicationMgtService().
+                                getApplicationExcludingFileBasedSPs(spPermission, tenantDomain);
+                        if (provider != null) {
+                            ApplicationPermission[] permissions = provider.getPermissionAndRoleConfig().getPermissions();
+                            if (permissions != null) {
+                                for (ApplicationPermission applicationPermission : permissions) {
+                                    permissionSet.add(provider.getApplicationName() + ABB_PERMISSION_SEPARATOR + applicationPermission.getValue());
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -102,6 +121,7 @@ public class CustomClaimUserOperationEventListener extends AbstractUserOperation
             }
             for (String permission : permissionList) {
                 if (permission.startsWith(APPLICATION_PERMISSION_NODE)) {
+                    //spPermission could be either sp name or sp permission
                     String spPermission = permission.substring(APPLICATION_PERMISSION_NODE.lastIndexOf("s") + 2);
                     if (spPermission.contains(DEFAULT_PERMISSION_SEPARATOR)) {
                         spPermission = spPermission.replace(DEFAULT_PERMISSION_SEPARATOR, ABB_PERMISSION_SEPARATOR);
@@ -110,9 +130,21 @@ public class CustomClaimUserOperationEventListener extends AbstractUserOperation
                         if (log.isDebugEnabled()) {
                             log.debug("Retrieving all the permission of the application : " + spPermission);
                         }
-                        /*
-                        to-do
-                         */
+
+                        String tenantDomain = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain();
+                        if (StringUtils.isBlank(tenantDomain)){
+                            tenantDomain = SUPER_TENANT_DOMAIN;
+                        }
+                        ServiceProvider provider = OAuth2ServiceComponentHolder.getApplicationMgtService().
+                                getApplicationExcludingFileBasedSPs(spPermission, tenantDomain);
+                        if (provider != null) {
+                            ApplicationPermission[] permissions = provider.getPermissionAndRoleConfig().getPermissions();
+                            if (permissions != null) {
+                                for (ApplicationPermission applicationPermission : permissions) {
+                                    permissionSet.add(provider.getApplicationName() + ABB_PERMISSION_SEPARATOR + applicationPermission.getValue());
+                                }
+                            }
+                        }
                     }
                 }
             }

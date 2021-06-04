@@ -22,7 +22,6 @@ public class ServiceComponent {
 
         // register the custom listener as an OSGI service.
         CustomClaimUserOperationEventListener listener = new CustomClaimUserOperationEventListener();
-        //listener.init();
         context.getBundleContext().registerService(UserOperationEventListener.class.getName(), listener, null);
         log.info("CustomClaimUserOperationEventListener bundle activated successfully.");
     }
